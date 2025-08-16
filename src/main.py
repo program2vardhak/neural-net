@@ -65,7 +65,7 @@ def softmax(Z):
     return expZ / np.sum(expZ, axis=0, keepdims=True)
 
 def forward_propagation(X, parameters):
-    caches = []   # store all (A_prev, W, b, Z) for backprop
+    cons = []   # store all (A_prev, W, b, Z) for backprop
     A = X
     L = len(parameters) // 2   # number of layers
 
@@ -74,16 +74,16 @@ def forward_propagation(X, parameters):
         b = parameters[f"b{l}"]
         Z, con = linear_forward(A, W, b)
         A = Leaky_relu(Z)
-        caches.append(con)
+        cons.append(con)
 
     # Final layer (softmax for classification)
     W = parameters[f"W{L}"]
     b = parameters[f"b{L}"]
     Z, con = linear_forward(A, W, b)
     A = softmax(Z)
-    caches.append(con)
+    cons.append(con)
 
-    return A, caches
+    return A, cons
 
 # One Hot Encoding
 def one_hot(Y, num_classes=10):
@@ -108,14 +108,14 @@ def relu_backward(dA, Z):
     dZ[Z <= 0] = 0
     return dZ
 
-def backward_propagation(AL, Y, caches, parameters):
+def backward_propagation(AL, Y, cons, parameters):
     grads = {}
     L = len(parameters) // 2
     m = AL.shape[1]
 
     # Output layer
     dZL = AL - Y
-    A_prev, W, b, Z = caches[-1]
+    A_prev, W, b, Z = cons[-1]
     grads[f"dW{L}"] = (1/m) * np.dot(dZL, A_prev.T)
     grads[f"db{L}"] = (1/m) * np.sum(dZL, axis=1, keepdims=True)
 
@@ -123,7 +123,7 @@ def backward_propagation(AL, Y, caches, parameters):
 
     # Hidden layers
     for l in reversed(range(1, L)):
-        A_prev, W, b, Z = caches[l-1]
+        A_prev, W, b, Z = cons[l-1]
         dZ = relu_backward(dA_prev, Z)
         grads[f"dW{l}"] = (1/m) * np.dot(dZ, A_prev.T)
         grads[f"db{l}"] = (1/m) * np.sum(dZ, axis=1, keepdims=True)
@@ -153,14 +153,14 @@ def model(X, Y, layers, learning_rate=0.01, num_epochs=500, print_cost=True):
 
     for i in range(num_epochs):
         # Forward
-        AL, caches = forward_propagation(X, parameters)
+        AL, cons = forward_propagation(X, parameters)
 
         # Cost
         cost = compute_cost(AL, Y_oh)
         costs.append(cost)
 
         # Backward
-        grads = backward_propagation(AL, Y_oh, caches, parameters)
+        grads = backward_propagation(AL, Y_oh, cons, parameters)
 
         # Update
         parameters = update_parameters(parameters, grads, learning_rate)
@@ -299,7 +299,7 @@ if num_incorrect > 0:
     plt.show()
 
     # Error analysis by true class
-    print("\n📉 ERROR ANALYSIS BY TRUE CLASS:")
+    print("\n ERROR ANALYSIS BY TRUE CLASS:")
     print("-" * 35)
     for digit in range(10):
         true_mask = (y_val_viz == digit)
@@ -308,7 +308,7 @@ if num_incorrect > 0:
             error_rate = errors_for_digit / np.sum(true_mask) * 100
             print(f"Digit {digit}: {errors_for_digit} errors ({error_rate:.1f}% error rate)")
 else:
-    print("\n🎉 PERFECT ACCURACY! No misclassified samples!")
+    print("\n No misclassified samples!")
 
 # 6. Digit Distribution in Validation Set
 plt.figure(figsize=(10, 6))
