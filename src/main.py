@@ -7,9 +7,9 @@ X = df.iloc[:, 1:].to_numpy()  # Features (784 pixels)
 y = df.iloc[:, 0].to_numpy()   # Labels (digits 0-9)
 
 # Shuffle before splitting to cause randmness while training to become more accurate
-indices = np.random.permutation(len(df))
-X = X[indices]
-y = y[indices]
+indi = np.random.permutation(len(df))
+X = X[indi]
+y = y[indi]
 
 # Split into train (80%) and validation (20%)
 train_size = int(0.8 * len(df))
@@ -27,25 +27,26 @@ y_train = y_train.reshape(1, -1)
 y_val = y_val.reshape(1, -1)
 
 # Setting number of neurons in each layer
-layer_dims = [784, 128, 64, 10]
+layers = [784, 128, 64, 10]
 
 """
 Initializing Parameters and Bias for the layers
+
 """
-def initialize_parameters(layer_dims):
+def initialize_parameters(layers):
     np.random.seed(42)
     parameters = {}
-    L = len(layer_dims)  # number of layers in network
+    L = len(layers)  # number of layers in network
 
     for i in range(1, L):
-        parameters[f"W{i}"] = np.random.randn(layer_dims[i], layer_dims[i-1]) * 0.01
-        parameters[f"b{i}"] = np.zeros((layer_dims[i], 1))  # bias starts at 0
+        parameters[f"W{i}"] = np.random.randn(layers[i], layers[i-1]) * 0.01
+        parameters[f"b{i}"] = np.zeros((layers[i], 1))  # bias starts at 0
 
     return parameters
 
 
 # Example: initialize weights
-parameters = initialize_parameters(layer_dims)
+parameters = initialize_parameters(layers)
 m=X_train.shape[1]
 """
 Applying Forward Propogation
@@ -53,8 +54,8 @@ Applying Forward Propogation
 """
 def linear_forward(A_prev, W, b):
     Z = np.dot(W, A_prev) + b
-    cache = (A_prev, W, b, Z)  # Save values for backprop later
-    return Z, cache
+    con = (A_prev, W, b, Z)  # Save values for backprop later
+    return Z, con
 
 def Leaky_relu(Z,k=0.01):   #Leaky Relu to prevent dead neurons
     return np.maximum(k*Z, Z)
@@ -71,16 +72,16 @@ def forward_propagation(X, parameters):
     for l in range(1, L):  # hidden layers (ReLU)
         W = parameters[f"W{l}"]
         b = parameters[f"b{l}"]
-        Z, cache = linear_forward(A, W, b)
+        Z, con = linear_forward(A, W, b)
         A = Leaky_relu(Z)
-        caches.append(cache)
+        caches.append(con)
 
     # Final layer (softmax for classification)
     W = parameters[f"W{L}"]
     b = parameters[f"b{L}"]
-    Z, cache = linear_forward(A, W, b)
+    Z, con = linear_forward(A, W, b)
     A = softmax(Z)
-    caches.append(cache)
+    caches.append(con)
 
     return A, caches
 
@@ -94,6 +95,7 @@ def compute_cost(AL, Y):
     """
     AL -- softmax probabilities (num_classes, m)
     Y  -- one-hot labels (num_classes, m)
+
     """
     m = Y.shape[1]
     cost = -(1/m) * np.sum(Y * np.log(AL + 1e-8))
@@ -140,12 +142,13 @@ def update_parameters(parameters, grads, learning_rate):
 
 
 """
+
 Training the Model
 
 """
-def model(X, Y, layer_dims, learning_rate=0.01, num_epochs=500, print_cost=True):
-    parameters = initialize_parameters(layer_dims)
-    Y_oh = one_hot(Y, layer_dims[-1])
+def model(X, Y, layers, learning_rate=0.01, num_epochs=500, print_cost=True):
+    parameters = initialize_parameters(layers)
+    Y_oh = one_hot(Y, layers[-1])
     costs = []
 
     for i in range(num_epochs):
@@ -175,7 +178,7 @@ def predict(X, parameters):
 
 
 #Training
-parameters, training_costs = model(X_train, y_train, layer_dims, learning_rate=0.01, num_epochs=500)
+parameters, training_costs = model(X_train, y_train, layers, learning_rate=0.01, num_epochs=500)
 
 y_pred = predict(X_val, parameters)
 accuracy = np.mean(y_pred == y_val.flatten())
@@ -196,7 +199,7 @@ plt.style.use('default')
 sns.set_palette("husl")
 
 print("\n" + "="*50)
-print("📊 VISUALIZATION AND ANALYSIS")
+print(" VISUALIZATION AND ANALYSIS")
 print("="*50)
 
 # 1. Training Cost Curve
@@ -225,7 +228,7 @@ plt.tight_layout()
 plt.show()
 
 # 3. Per-class Accuracy Analysis
-print("\n📈 PER-CLASS ACCURACY ANALYSIS:")
+print("\n PER-CLASS ACCURACY ANALYSIS:")
 print("-" * 40)
 class_accuracies = []
 for digit in range(10):
@@ -256,7 +259,7 @@ plt.tight_layout()
 plt.show()
 
 # 4. Sample Correct Predictions
-print("\n✅ SAMPLE CORRECT PREDICTIONS:")
+print("\n SAMPLE CORRECT PREDICTIONS:")
 correct_mask = (y_pred_viz == y_val_viz)
 correct_indices = np.where(correct_mask)[0]
 
@@ -277,7 +280,7 @@ incorrect_mask = (y_pred_viz != y_val_viz)
 num_incorrect = np.sum(incorrect_mask)
 
 if num_incorrect > 0:
-    print(f"\n❌ FOUND {num_incorrect} MISCLASSIFIED SAMPLES:")
+    print(f"\n FOUND {num_incorrect} MISCLASSIFIED SAMPLES:")
     incorrect_indices = np.where(incorrect_mask)[0]
 
     plt.figure(figsize=(15, 6))
@@ -325,9 +328,9 @@ plt.tight_layout()
 plt.show()
 
 # 7. Model Summary
-print(f"\n📋 MODEL SUMMARY:")
+print(f"\n MODEL SUMMARY:")
 print("=" * 30)
-print(f"Architecture: {layer_dims}")
+print(f"Architecture: {layers}")
 print(f"Total Parameters: {sum(p.size for p in parameters.values() if hasattr(p, 'size'))}")
 print(f"Training Samples: {X_train.shape[1]}")
 print(f"Validation Samples: {X_val.shape[1]}")
@@ -335,9 +338,9 @@ print(f"Final Training Cost: {training_costs[-1]:.4f}")
 print(f"Validation Accuracy: {accuracy*100:.2f}%")
 
 # Classification Report
-print(f"\n📊 DETAILED CLASSIFICATION REPORT:")
+print(f"\n DETAILED CLASSIFICATION REPORT:")
 print("-" * 40)
 print(classification_report(y_val_viz, y_pred_viz,
                           target_names=[f'Digit {i}' for i in range(10)]))
 
-print("\n🎯 Analysis Complete! Check the plots above for detailed insights.")
+print("\n Analysis Complete! Check the plots above for detailed insights.")
